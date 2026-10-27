@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CYBER.COMM - Terminal de Messagerie Sécurisée</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cyber: {
+              bg: '#030a06',
+              surface: '#08140c',
+              card: '#0b1c12',
+              cardhover: '#11291b',
+              border: '#163824',
+              borderlight: '#235437',
+              neon: '#00ff88',
+              neondark: '#00cc6a',
+              text: '#e2f9ec',
+              muted: '#6a9477',
+              danger: '#ff4d4d',
+              warning: '#ffb700'
+            }
+          },
+          boxShadow: {
+            'neon': '0 0 15px rgba(0, 255, 136, 0.25)',
+            'neon-strong': '0 0 25px rgba(0, 255, 136, 0.5)',
+            'glow-red': '0 0 15px rgba(255, 77, 77, 0.3)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide SVG Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Google Fonts (Fira Code & Inter) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #030a06;
+      color: #e2f9ec;
+    }
+    .font-mono-code {
+      font-family: 'Fira Code', monospace;
+    }
+    
+    /* Scrollbar personnalisée Cyber */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #030a06;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #163824;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00ff88;
+    }
+
+    /* Effets de pulsation et scanline matrix */
+    .scanline {
+      background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0, 255, 136, 0.03) 50%,
+        rgba(0, 255, 136, 0.03)
+      );
+      background-size: 100% 4px;
+    }
+
+    .pulse-glow {
+      animation: pulseGlow 2s infinite alternate;
+    }
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 5px rgba(0, 255, 136, 0.2); }
+      100% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.6); }
+    }
+
+    /* Animation onde sonore simulateur vocal */
+    .wave-bar {
+      animation: wave 1.2s ease-in-out infinite alternate;
+    }
+    .wave-bar:nth-child(2) { animation-delay: 0.2s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.6s; }
+    .wave-bar:nth-child(5) { animation-delay: 0.8s; }
+    @keyframes wave {
+      0% { height: 4px; }
+      100% { height: 24px; }
+    }
+  </style>
+</head>
+
+<body class="h-screen overflow-hidden flex flex-col scanline select-none">
+
+  <!-- ========================================== -->
+  <!-- BANNIÈRE CHANGER RAPIDE D'UTILISATEUR (DEMO) -->
+  <!-- ========================================== -->
+  <div id="quick-switcher-bar" class="bg-cyber-surface border-b border-cyber-border px-4 py-1.5 flex items-center justify-between text-xs font-mono-code text-cyber-muted z-50">
+    <div class="flex items-center gap-2">
+      <span class="inline-block w-2 h-2 rounded-full bg-cyber-neon animate-ping"></span>
+      <span class="text-cyber-neon font-bold tracking-wider">CYBER.COMM // CANAL SÉCURISÉ</span>
+      <span class="hidden md:inline text-cyber-border">|</span>
+      <span class="hidden md:inline">Changer de perspective rapidement :</span>
+    </div>
+    <div id="quick-users-list" class="flex items-center gap-2 overflow-x-auto py-0.5">
+      <!-- Rempli en JS -->
+    </div>
+  </div>
+
+  <!-- CONTAINER PRINCIPAL DES VUES -->
+  <div id="app-container" class="flex-1 relative overflow-hidden flex flex-col">
+
+    <!-- ========================================== -->
+    <!-- VUE 1: INITIALISATION / PREMIER DÉMARRAGE  -->
+    <!-- ========================================== -->
+    <div id="view-setup" class="hidden absolute inset-0 bg-cyber-bg z-40 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="max-w-md w-full bg-cyber-card border border-cyber-neon/40 rounded-xl p-6 sm:p-8 shadow-neon relative overflow-hidden">
+        <div class="absolute -top-12 -right-12 w-32 h-32 bg-cyber-neon/10 rounded-full blur-2xl"></div>
+        
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-cyber-border/60 border border-cyber-neon text-cyber-neon mb-3 shadow-neon">
+            <i data-lucide="shield-check" class="w-8 h-8"></i>
+          </div>
+          <h1 class="text-xl font-bold font-mono-code text-cyber-neon tracking-wider">INITIALISATION APPAREIL</h1>
+          <p class="text-xs text-cyber-muted mt-1">Aucun compte administrateur détecté. Configurez votre compte Super-Admin racine.</p>
+        </div>
+
+        <form id="setup-form" onsubmit="App.handleSetup(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-mono-code text-cyber-muted mb-1">NOM COMPLET</label>
+            <input type="text" id="setup-fullname" required placeholder="ex: Admin Racine" 
+              class="w-full bg-cyber-surface border border-cyber-border focus:border-cyber-neon rounded-lg px-3 py-2 text-sm outline-none transition-colors">
+          </div>
+          <div>
+            <label class="block text-xs font-mono-code text-cyber-muted mb-1">IDENTIFIANT UNIQUE (USERNAME)</label>
+            <input type="text" id="setup-username" required placeholder="admin" 
+              class="w-full bg-cyber-surface border border-cyber-border focus:border-cyber-neon rounded-lg px-3 py-2 text-sm outline-none font-mono-code transition-colors">
+          </div>
+          <div>
+            <label class="block text-xs font-mono-code text-cyber-muted mb-1">ADRESSE EMAIL OFFICIELLE</label>
+            <input type="email" id="setup-email" required placeholder="admin@cyber.comm" 
+              class="w-full bg-cyber-surface border border-cyber-border focus:border-cyber-neon rounded-lg px-3 py-2 text-sm outline-none transition-colors">
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-mono-code text-cyber-muted mb-1">MOT DE PASSE ADMIN</label>
+              <input type="password" id="setup-password" required placeholder="••••••••" 
+                class="w-full bg-cyber-surface border border-cyber-border focus:border-cyber-neon rounded-lg px-3 py-2 text-sm outline-none transition-colors">
+            </div>
+            <div>
+              <label class="block text-xs font-mono-code text-cyber-muted mb-1">PIN DE SÉCURITÉ (4 DIGITS)</label>
+              <input type="text" id="setup-pin" maxlength="4" pattern="\d{4}" required placeholder="9999" 
+                class="w-full bg-cyber-surface border border-cyber-border focus:border-cyber-neon rounded-lg px-3 py-2 text-sm outline-none font-mono-code text-center tracking-widest transition-colors">
+            </div>
+          </div>
+
+          <button type="submit" 
+            class="w-full mt-4 bg-cyber-neon text-cyber-bg font-mono-code font-bold py-3 rounded-lg hover:bg-cyber-neondark transition-all duration-200 shadow-neon flex items-center justify-center gap-2">
+            <i data-lucide="power" class="w-4 h-4"></i>
+            CREER COMPTE SUPER-ADMIN
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VUE 2: AUTHENTIFICATION (LOGIN / REGISTRE) -->
+    <!-- ========================================== -->
+    <div id="view-auth" class="hidden absolute inset-0 bg-cyber-bg z-30 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="max-w-md w-full bg-cyber-card border border-cyber-border rounded-xl p-6 sm:p-8 shadow-2xl relative">
+        
+        <!-- Onglets Connexion / Inscription -->
+        <div class="flex border-b border-cyber-border mb-6">
+          <button id="auth-tab-login" onclick="App.switchAuthTab('login')" 
+            class="flex-1 pb-3 text-sm font-mono-code font-semibold text-cyber-neon border-b-2 border-cyber-neon transition-all">
+            CONNEXION
+          </button>
+          <button id="auth-tab-register" onclick="App.switchAuthTab('register')" 
+            class="flex-1 pb-3 text-sm font-mono-code font-semibold text-cyber-muted hover:text-cyber-text border-b-2 border-transparent transition-all">
+            CRÉER UN COMPTE
+          </button>
+        </div>
+
+        <!-- FORMULAIRE CONNEXION -->
+        <form id="login-form" onsubmit="App.handleLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-mono-code text-cyber-muted mb-1">IDENTIFIANT OU EMAIL</label>
+            <div class="relative">
+              <input type="text" id="login-identity" required placeholder="admin ou email@cyber.comm" 
+                class="w-full bg-cyber-surface border border-cyber-border focus:border-cyber-neon rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none transition-colors">
+              <i data-lucide="user" class="w-4 h-4 text-cyber-muted absolute left-3 top-3"></i>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-mono-code text-cyber-muted mb-1">MOT DE PASSE</label>
+            <div class="relative">
+              <input type="password" id="login-password" required placeholder="••••••••" 
+                class="w-full bg-cyber-surface border border-cyber-border focus:border-cyber-neon rounded-lg pl-10 pr-3 py-2.5 text-sm outline-none transition-colors">
+              <i data-lucide="lock" class="w-4 h-4 text-cyber-muted absolute left-3 top-3"></i>
+            </div>
+          </div>
+          <button type="submit" 
+            class="w-full bg-cyber-neon text-cyber-bg font-mono-code font-bold py-3 rounded-lg hover:bg-cyber-neondark transition-all shadow-neon flex items-center justify-center gap-2">
+            <i data-lucide="log-in" class="w-4 h-4"></i>
+            SE CONNECTER
+          </button>
+        </form>
+
+        <!-- FORMULAIRE INSCRIPTION -->
+        <form id="register-form" onsubmit="App.handleRegister(event)" class="hidden space-y-3">
+          <div>
+            <label class="block text-xs font-mono-code text-cyber-muted mb-1">NOM ET PRÉNOM</label>
+            <input type="text" id="reg-fullname" required placeholder="Jean Dupont" 
+              class="w-full bg-cyber-surface border border-cyber-border focus:border-cyber-neon rounded-lg px-3 py-2 text-sm outline-none transition-colors">
+          </div>
+          <div>
+            <label class="block text-xs font-mono-code text-cyber-muted mb-1">NOM D'UTILISATEUR</label>
+            <input type="text" id="reg-username" required placeholder="jdupont" pattern="[a-zA-Z0-9_]{3,20}" 
+              class="w-full bg-cyber-surface border border-cyber-border focus:border-cyber-neon rounded-lg px-3 py-2 text-sm outline-none font-mono-code transition-colors">
+          </div>
+          <div>
+            <label class="block text-xs font-mono-code text-cyber-muted mb-1">EMAIL INTERNATIONALE</label>
+            <input type="email" id="reg-email" required placeholder="jean.dupont@domain.com" 
+              class="w-full bg-cyber-surface border border-cyber-border focus:border-cyber-neon rounded-lg px-3 py-2 text-sm outline-none transition-colors">
+          </div>
+          <div>
+            <label class="block text-xs font-mono-code text-cyber-muted mb-1">NUMÉRO DE TÉLÉPHONE INTERNATIONALE</label>
+            <div class="flex gap-2">
+              <select id="reg-phone-code" class="bg-cyber-surface border border-cyber-border focus:border-cyber-neon rounded-lg px-2 py-2 text-xs font-mono-code outline-none text-cyber-text">
+                <option value="+33">🇫🇷 +33 (FR)</option>
+                <option value="+261">🇲🇬 +261 (MG)</option>
+                <option value="+1">🇺🇸 +1 (US)</option>
+                <option value="+44">🇬🇧 +44 (UK)</option>
+                <option value="+49">🇩🇪 +49 (DE)</option>
+                <option value="+81">🇯🇵 +81 (JP)</option>
+                <option value="+225">🇨🇮 +225 (CI)</option>
+                <option value="+221">🇸🇳 +221 (SN)</option>
+              </select>
+              <input type="tel" id="reg-phone-number" required placeholder="612345678" pattern="[0-9]{6,12}" 
+                class="flex-1 bg-cyber-surface border border-cyber-border focus:border-cyber-neon rounded-lg px-3 py-2 text-sm outline-none font-mono-code transition-colors">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-mono-code text-cyber-muted mb-1">MOT DE PASSE</label>
+            <input type="password" id="reg-password" oninput="App.checkPasswordStrength(this.value)" required placeholder="••••••••" 
+              class="w-full bg-cyber-surface border border-cyber-border focus:border-cyber-neon rounded-lg px-3 py-2 text-sm outline-none transition-colors">
+            <!-- Jauge de résistance du mot de passe -->
+            <div class="mt-1.5 flex items-center gap-2">
+              <div class="flex-1 h-1.5 bg-cyber-surface rounded-full overflow-hidden flex">
+                <div id="pass-strength-bar" class="h-full w-0 bg-cyber-danger transition-all duration-300"></div>
+              </div>
+              <span id="pass-strength-text" class="text-[10px] font-mono-code text-cyber-muted">Faible</span>
+            </div>
+          </div>
+
+          <button type="submit" 
+            class="w-full mt-2 bg-cyber-neon text-cyber-bg font-mono-code font-bold py-2.5 rounded-lg hover:bg-cyber-neondark transition-all shadow-neon flex items-center justify-center gap-2">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            S'INSCRIRE MAINTENANT
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VUE 3: MESSAGERIE PRINCIPALE (CORE CHAT)  -->
+    <!-- ========================================== -->
+    <div id="view-chat" class="hidden flex-1 flex flex-col md:flex-row overflow-hidden relative">
+
+      <!-- LEFT SIDEBAR: LISTE DES DISCUSSIONS ET UTILISATEURS -->
+      <div id="sidebar-panel" class="w-full md:w-80 lg:w-96 bg-cyber-surface border-r border-cyber-border flex flex-col h-full z-10 transition-all duration-300">
+        
+        <!-- Sidebar Header (Profil Utilisateur Connecté) -->
+        <div class="p-3 bg-cyber-card border-b border-cyber-border flex items-center justify-between">
+          <div class="flex items-center gap-3 overflow-hidden">
+            <div class="relative">
+              <div id="user-avatar-badge" class="w-10 h-10 rounded-full bg-cyber-border border border-cyber-neon flex items-center justify-center text-cyber-neon font-bold font-mono-code">
+                AD
+              </div>
+              <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-cyber-neon border-2 border-cyber-surface"></span>
+            </div>
+            <div class="truncate">
+              <div id="user-display-name" class="font-bold text-sm text-cyber-text truncate">Admin</div>
+              <div id="user-role-badge" class="text-[10px] font-mono-code text-cyber-neon uppercase tracking-wider">SUPER ADMIN</div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1">
+            <!-- Bouton Administration (Visible uniquement si Admin) -->
+            <button id="btn-admin-panel" onclick="App.openAdminModal()" title="Panneau Administration Super-Admin"
+              class="hidden p-2 text-cyber-neon hover:bg-cyber-border/50 rounded-lg transition-colors relative">
+              <i data-lucide="shield-alert" class="w-5 h-5"></i>
+              <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-cyber-neon animate-ping"></span>
+            </button>
+            <button onclick="App.logout()" title="Déconnexion" class="p-2 text-cyber-muted hover:text-cyber-danger hover:bg-cyber-border/50 rounded-lg transition-colors">
+              <i data-lucide="log-out" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Recherche Contacts/Chats -->
+        <div class="p-3 border-b border-cyber-border">
+          <div class="relative">
+            <input type="text" id="chat-search" oninput="App.renderUserList()" placeholder="Rechercher contact..." 
+              class="w-full bg-cyber-card border border-cyber-border focus:border-cyber-neon rounded-lg pl-9 pr-3 py-1.5 text-xs outline-none transition-colors">
+            <i data-lucide="search" class="w-4 h-4 text-cyber-muted absolute left-3 top-2"></i>
+          </div>
+        </div>
+
+        <!-- Liste des conversations & utilisateurs -->
+        <div id="user-list-container" class="flex-1 overflow-y-auto divide-y divide-cyber-border/30">
+          <!-- Rempli dynamiquement en JS -->
+        </div>
+      </div>
+
+      <!-- MAIN CHAT PANEL -->
+      <div id="chat-panel" class="flex-1 bg-cyber-bg flex flex-col h-full relative">
+        
+        <!-- Unselected Chat State -->
+        <div id="chat-empty-state" class="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div class="w-20 h-20 rounded-full bg-cyber-card border border-cyber-border flex items-center justify-center text-cyber-muted mb-4 shadow-neon">
+            <i data-lucide="messages-square" class="w-10 h-10 text-cyber-neon"></i>
+          </div>
+          <h2 class="text-lg font-bold font-mono-code text-cyber-text">CANAL DE TRANSMISSION SÉCURISÉ</h2>
+          <p class="text-xs text-cyber-muted max-w-sm mt-1">Sélectionnez une discussion à gauche pour initier le chiffrement et échanger en temps réel.</p>
+        </div>
+
+        <!-- Selected Active Chat Interface -->
+        <div id="chat-active-interface" class="hidden flex-1 flex flex-col h-full">
+          
+          <!-- Chat Header -->
+          <div class="p-3 bg-cyber-surface border-b border-cyber-border flex items-center justify-between z-10">
+            <div class="flex items-center gap-3">
+              <button onclick="App.closeMobileChat()" class="md:hidden p-1 text-cyber-muted hover:text-cyber-text">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+              </button>
+              <div class="relative">
+                <div id="active-chat-avatar" class="w-10 h-10 rounded-full bg-cyber-card border border-cyber-neon flex items-center justify-center text-cyber-neon font-bold font-mono-code">
+                  U
+                </div>
+                <span id="active-chat-status-dot" class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-cyber-neon border-2 border-cyber-surface"></span>
+              </div>
+              <div>
+                <div id="active-chat-name" class="font-bold text-sm text-cyber-text">Contact</div>
+                <div id="active-chat-status" class="text-[11px] font-mono-code text-cyber-neon flex items-center gap-1">
+                  En ligne
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions du Header de Discussion -->
+            <div class="flex items-center gap-2 text-cyber-muted">
+              <button onclick="App.simulateVoiceCall()" title="Appel Sécurisé" class="p-2 hover:bg-cyber-card rounded-lg transition-colors hover:text-cyber-neon">
+                <i data-lucide="phone" class="w-4 h-4"></i>
+              </button>
+              <button onclick="App.showContactDetails()" title="Infos Contact" class="p-2 hover:bg-cyber-card rounded-lg transition-colors hover:text-cyber-neon">
+                <i data-lucide="info" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Zone d'affichage des Messages -->
+          <div id="messages-container" class="flex-1 p-4 overflow-y-auto space-y-3 bg-[radial-gradient(#0c2114_1px,transparent_1px)] [background-size:16px_16px]">
+            <!-- Messages injectés en JS -->
+          </div>
+
+          <!-- Preview Pièce Jointe / Note Vocale en cours -->
+          <div id="attachment-preview-bar" class="hidden px-4 py-2 bg-cyber-card border-t border-cyber-border flex items-center justify-between">
+            <div id="attachment-preview-content" class="flex items-center gap-2 text-xs font-mono-code text-cyber-neon">
+              <!-- Contenu injecté -->
+            </div>
+            <button onclick="App.clearAttachmentPreview()" class="text-cyber-muted hover:text-cyber-danger">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- Selector d'Emoji Popover -->
+          <div id="emoji-picker-menu" class="hidden absolute bottom-16 left-4 bg-cyber-card border border-cyber-border rounded-xl p-3 shadow-2xl z-20 grid grid-cols-6 gap-2">
+            <button onclick="App.insertEmoji('👍')" class="hover:bg-cyber-surface p-2 rounded text-lg">👍</button>
+            <button onclick="App.insertEmoji('🔥')" class="hover:bg-cyber-surface p-2 rounded text-lg">🔥</button>
+            <button onclick="App.insertEmoji('⚡')" class="hover:bg-cyber-surface p-2 rounded text-lg">⚡</button>
+            <button onclick="App.insertEmoji('🛡️')" class="hover:bg-cyber-surface p-2 rounded text-lg">🛡️</button>
+            <button onclick="App.insertEmoji('💻')" class="hover:bg-cyber-surface p-2 rounded text-lg">💻</button>
+            <button onclick="App.insertEmoji('✅')" class="hover:bg-cyber-surface p-2 rounded text-lg">✅</button>
+            <button onclick="App.insertEmoji('🔒')" class="hover:bg-cyber-surface p-2 rounded text-lg">🔒</button>
+            <button onclick="App.insertEmoji('😊')" class="hover:bg-cyber-surface p-2 rounded text-lg">😊</button>
+            <button onclick="App.insertEmoji('🚀')" class="hover:bg-cyber-surface p-2 rounded text-lg">🚀</button>
+            <button onclick="App.insertEmoji('⚠️')" class="hover:bg-cyber-surface p-2 rounded text-lg">⚠️</button>
+            <button onclick="App.insertEmoji('🎯')" class="hover:bg-cyber-surface p-2 rounded text-lg">🎯</button>
+            <button onclick="App.insertEmoji('🤝')" class="hover:bg-cyber-surface p-2 rounded text-lg">🤝</button>
+          </div>
+
+          <!-- Message Input Bar -->
+          <div class="p-3 bg-cyber-surface border-t border-cyber-border flex items-center gap-2">
+            <!-- Bouton Emoji -->
+            <button onclick="App.toggleEmojiPicker()" class="p-2 text-cyber-muted hover:text-cyber-neon rounded-lg hover:bg-cyber-card transition-colors">
+              <i data-lucide="smile" class="w-5 h-5"></i>
+            </button>
+
+            <!-- Bouton Pièce Jointe -->
+            <button onclick="App.triggerFileSelect()" class="p-2 text-cyber-muted hover:text-cyber-neon rounded-lg hover:bg-cyber-card transition-colors">
+              <i data-lucide="paperclip" class="w-5 h-5"></i>
+            </button>
+            <input type="file" id="hidden-file-input" class="hidden" onchange="App.handleFileSelect(event)">
+
+            <!-- Input Texte -->
+            <input type="text" id="message-input" onkeypress="if(event.key==='Enter') App.sendMessage()" placeholder="Tapez votre message chiffré..." 
+              class="flex-1 bg-cyber-card border border-cyber-border focus:border-cyber-neon rounded-lg px-4 py-2.5 text-sm outline-none transition-colors">
+
+            <!-- Enregistreur Vocal Simulation -->
+            <button id="btn-voice-rec" onclick="App.toggleVoiceRecording()" title="Note Vocale" 
+              class="p-2.5 text-cyber-muted hover:text-cyber-neon rounded-lg hover:bg-cyber-card transition-colors">
+              <i data-lucide="mic" class="w-5 h-5"></i>
+            </button>
+
+            <!-- Bouton Envoyer -->
+            <button onclick="App.sendMessage()" 
+              class="bg-cyber-neon text-cyber-bg font-bold p-2.5 rounded-lg hover:bg-cyber-neondark transition-all shadow-neon">
+              <i data-lucide="send" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL ADMIN SYSTEM & SURVEILLANCE AUDIT    -->
+  <!-- ========================================== -->
+  <div id="modal-admin" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6">
+    <div class="bg-cyber-card border border-cyber-neon rounded-xl w-full max-w-5xl h-[85vh] flex flex-col shadow-neon-strong overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="p-4 bg-cyber-surface border-b border-cyber-border flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="shield-check" class="w-6 h-6 text-cyber-neon"></i>
+          <h2 class="text-base font-bold font-mono-code text-cyber-neon tracking-wider">PANNEAU SUPER-ADMINISTRATEUR // CONTRÔLE CENTRAL</h2>
+        </div>
+        <button onclick="App.closeAdminModal()" class="text-cyber-muted hover:text-cyber-danger p-1 rounded-lg">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Onglets Admin -->
+      <div class="flex border-b border-cyber-border bg-cyber-surface text-xs font-mono-code overflow-x-auto">
+        <button id="adm-tab-users" onclick="App.switchAdminTab('users')" class="px-5 py-3 border-b-2 border-cyber-neon text-cyber-neon font-bold flex items-center gap-2">
+          <i data-lucide="users" class="w-4 h-4"></i> GESTION DES COMPTES
+        </button>
+        <button id="adm-tab-audit" onclick="App.switchAdminTab('audit')" class="px-5 py-3 border-b-2 border-transparent text-cyber-muted hover:text-cyber-text flex items-center gap-2">
+          <i data-lucide="eye" class="w-4 h-4"></i> AUDIT & SURVEILLANCE GLOBALE
+        </button>
+        <button id="adm-tab-logs" onclick="App.switchAdminTab('logs')" class="px-5 py-3 border-b-2 border-transparent text-cyber-muted hover:text-cyber-text flex items-center gap-2">
+          <i data-lucide="activity" class="w-4 h-4"></i> JOURNAUX DE SÉCURITÉ
+        </button>
+        <button id="adm-tab-backup" onclick="App.switchAdminTab('backup')" class="px-5 py-3 border-b-2 border-transparent text-cyber-muted hover:text-cyber-text flex items-center gap-2">
+          <i data-lucide="database" class="w-4 h-4"></i> SAUVEGARDE & IMPORT JSON
+        </button>
+      </div>
+
+      <!-- Contenu des Onglets -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-cyber-bg">
+        
+        <!-- ONGLET 1: GESTION DES UTILISATEURS -->
+        <div id="adm-sec-users" class="space-y-4">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <h3 class="text-sm font-mono-code text-cyber-text font-semibold">REPERTOIRE DE TOUS LES COMPTES</h3>
+            <button onclick="App.openCreateUserPrompt()" class="bg-cyber-border hover:bg-cyber-borderlight text-cyber-neon px-3 py-1.5 rounded-lg text-xs font-mono-code flex items-center gap-1.5">
+              <i data-lucide="user-plus" class="w-4 h-4"></i> Créer Utilisateur
+            </button>
+          </div>
+          <div class="overflow-x-auto border border-cyber-border rounded-lg">
+            <table class="w-full text-left text-xs font-mono-code">
+              <thead class="bg-cyber-surface text-cyber-muted border-b border-cyber-border">
+                <tr>
+                  <th class="p-3">UTILISATEUR</th>
+                  <th class="p-3">EMAIL / TEL</th>
+                  <th class="p-3">RÔLE</th>
+                  <th class="p-3">STATUT</th>
+                  <th class="p-3 text-right">ACTIONS ADMIN</th>
+                </tr>
+              </thead>
+              <tbody id="adm-users-table-body" class="divide-y divide-cyber-border/40">
+                <!-- Rempli en JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ONGLET 2: SURVEILLANCE ET AUDIT GLOBAL (READ-ONLY INSPECTION) -->
+        <div id="adm-sec-audit" class="hidden space-y-4">
+          <div class="bg-cyber-surface border border-cyber-warning/30 p-3 rounded-lg flex items-center gap-3 text-xs text-cyber-warning">
+            <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0"></i>
+            <span>Mode Surveillance Administrateur : Vous pouvez inspecter les fil de discussion entre tous les utilisateurs pour des motifs d'audit et de modération de sécurité.</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 h-96">
+            <!-- Liste des Fils de discussions détectés -->
+            <div class="bg-cyber-surface border border-cyber-border rounded-lg p-3 flex flex-col">
+              <div class="text-xs font-mono-code text-cyber-neon mb-2 font-bold">DISCUSSIONS DÉTECTÉES</div>
+              <div id="adm-audit-threads-list" class="flex-1 overflow-y-auto space-y-1">
+                <!-- Rempli en JS -->
+              </div>
+            </div>
+
+            <!-- Inspecteur de conversation -->
+            <div class="md:col-span-2 bg-cyber-surface border border-cyber-border rounded-lg p-3 flex flex-col">
+              <div class="text-xs font-mono-code text-cyber-neon mb-2 font-bold flex items-center justify-between">
+                <span>INSPECTION CHAT</span>
+                <span id="adm-audit-thread-title" class="text-cyber-muted font-normal">Sélectionnez un fil</span>
+              </div>
+              <div id="adm-audit-messages-box" class="flex-1 overflow-y-auto bg-cyber-bg rounded-lg p-3 space-y-2 border border-cyber-border/50">
+                <div class="text-center text-xs text-cyber-muted py-12">Cliquez sur une discussion à gauche pour afficher les logs de messages.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ONGLET 3: LOGS D'ACTIVITÉ -->
+        <div id="adm-sec-logs" class="hidden space-y-3">
+          <h3 class="text-sm font-mono-code text-cyber-text font-semibold">JOURNAL D'AUDIT DU SYSTÈME EN TEMPS RÉEL</h3>
+          <div class="bg-cyber-surface border border-cyber-border rounded-lg p-3 h-80 overflow-y-auto font-mono-code text-xs space-y-1.5" id="adm-logs-container">
+            <!-- Rempli JS -->
+          </div>
+        </div>
+
+        <!-- ONGLET 4: BACKUP ET RESTAURATION -->
+        <div id="adm-sec-backup" class="hidden space-y-6 max-w-xl">
+          <div class="bg-cyber-surface border border-cyber-border p-4 rounded-xl space-y-3">
+            <h4 class="font-bold text-sm text-cyber-neon font-mono-code flex items-center gap-2">
+              <i data-lucide="download" class="w-4 h-4"></i> EXPORTER LA BASE DE DONNÉES EN JSON
+            </h4>
+            <p class="text-xs text-cyber-muted">Téléchargez l'intégralité des utilisateurs, messages et journaux dans un fichier `.json`. Vous pourrez l'ouvrir sur n'importe quel autre ordinateur ou navigateur.</p>
+            <button onclick="App.exportDatabaseJSON()" class="bg-cyber-neon text-cyber-bg font-bold font-mono-code px-4 py-2 rounded-lg text-xs hover:bg-cyber-neondark transition-all shadow-neon">
+              EXPORTER (.JSON)
+            </button>
+          </div>
+
+          <div class="bg-cyber-surface border border-cyber-border p-4 rounded-xl space-y-3">
+            <h4 class="font-bold text-sm text-cyber-warning font-mono-code flex items-center gap-2">
+              <i data-lucide="upload" class="w-4 h-4"></i> IMPORTER UNE SAUVEGARDE (.JSON)
+            </h4>
+            <p class="text-xs text-cyber-muted">Sélectionnez un fichier JSON pour restaurer instantanément la base de données sur cet appareil.</p>
+            <input type="file" id="import-json-input" accept=".json" class="hidden" onchange="App.importDatabaseJSON(event)">
+            <button onclick="document.getElementById('import-json-input').click()" class="bg-cyber-warning text-cyber-bg font-bold font-mono-code px-4 py-2 rounded-lg text-xs hover:opacity-90 transition-all">
+              PARCOURIR ET IMPORTER
+            </button>
+          </div>
+
+          <div class="bg-cyber-surface border border-cyber-danger/40 p-4 rounded-xl space-y-3">
+            <h4 class="font-bold text-sm text-cyber-danger font-mono-code flex items-center gap-2">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>RÉINITIALISATION TOTALE DU SYSTÈME
+            </h4>
+            <p class="text-xs text-cyber-muted">Efface toutes les données locales. L'assistant de premier démarrage réapparaîtra.</p>
+            <button onclick="App.resetSystemDatabase()" class="bg-cyber-danger/20 border border-cyber-danger text-cyber-danger font-bold font-mono-code px-4 py-2 rounded-lg text-xs hover:bg-cyber-danger hover:text-white transition-all">
+              RÉINITIALISER TOUT
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS CONTAINER -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm"></div>
+
+  <!-- ========================================== -->
+  <!-- SCRIPT LOGIQUE APPLICATIVE COMPLETE        -->
+  <!-- ========================================== -->
+  <script>
+    /**
+     * MOTEUR DE STOCKAGE ET BASE DE DONNÉES LOCALES (IndexedDB / LocalStorage)
+     */
+    const DB = {
+      KEYS: {
+        CONFIG: 'cyber_comm_config_v1',
+        USERS: 'cyber_comm_users_v1',
+        MESSAGES: 'cyber_comm_messages_v1',
+        LOGS: 'cyber_comm_logs_v1',
+        SESSION: 'cyber_comm_session_v1'
+      },
+
+      init() {
+        if (!localStorage.getItem(this.KEYS.USERS)) {
+          localStorage.setItem(this.KEYS.USERS, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(this.KEYS.MESSAGES)) {
+          localStorage.setItem(this.KEYS.MESSAGES, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(this.KEYS.LOGS)) {
+          localStorage.setItem(this.KEYS.LOGS, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(this.KEYS.CONFIG)) {
+          localStorage.setItem(this.KEYS.CONFIG, JSON.stringify({ isInitialized: false, adminId: null }));
+        }
+      },
+
+      getConfig() {
+        return JSON.parse(localStorage.getItem(this.KEYS.CONFIG) || '{"isInitialized":false}');
+      },
+      saveConfig(cfg) {
+        localStorage.setItem(this.KEYS.CONFIG, JSON.stringify(cfg));
+      },
+
+      getUsers() {
+        return JSON.parse(localStorage.getItem(this.KEYS.USERS) || '[]');
+      },
+      saveUsers(users) {
+        localStorage.setItem(this.KEYS.USERS, JSON.stringify(users));
+      },
+
+      getMessages() {
+        return JSON.parse(localStorage.getItem(this.KEYS.MESSAGES) || '[]');
+      },
+      saveMessages(msgs) {
+        localStorage.setItem(this.KEYS.MESSAGES, JSON.stringify(msgs));
+      },
+
+      getLogs() {
+        return JSON.parse(localStorage.getItem(this.KEYS.LOGS) || '[]');
+      },
+      logActivity(action, actor, details) {
+        const logs = this.getLogs();
+        logs.unshift({
+          id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          timestamp: new Date().toISOString(),
+          action,
+          actor,
+          details
+        });
+        localStorage.setItem(this.KEYS.LOGS, JSON.stringify(logs.slice(0, 100))); // conserve 100 derniers
+      },
+
+      getSessionUser() {
+        const id = localStorage.getItem(this.KEYS.SESSION);
+        if (!id) return null;
+        return this.getUsers().find(u => u.id === id) || null;
+      },
+      setSessionUser(userId) {
+        if (userId) {
+          localStorage.setItem(this.KEYS.SESSION, userId);
+        } else {
+          localStorage.removeItem(this.KEYS.SESSION);
+        }
+      }
+    };
+
+    /**
+     * APPLICATION PRINCIPALE
+     */
+    const App = {
+      currentUser: null,
+      activeChatUser: null,
+      currentAttachment: null,
+      broadcastChannel: null,
+      isRecordingVoice: false,
+      recordingTimer: null,
+      recordingSeconds: 0,
+
+      init() {
+        DB.init();
+        
+        // Initialiser la synchronisation Multi-Onglets en temps réel
+        if ('BroadcastChannel' in window) {
+          this.broadcastChannel = new BroadcastChannel('cyber_comm_tab_sync');
+          this.broadcastChannel.onmessage = (event) => this.handleTabSyncEvent(event.data);
+        }
+
+        const config = DB.getConfig();
+
+        if (!config.isInitialized) {
+          this.showView('setup');
+        } else {
+          // Créer utilisateurs de démo si seulement admin existe
+          this.seedDefaultUsersIfNeeded();
+          
+          const sessionUser = DB.getSessionUser();
+          if (sessionUser) {
+            this.currentUser = sessionUser;
+            this.showView('chat');
+            this.setupChatUI();
+          } else {
+            this.showView('auth');
+          }
+        }
+
+        this.updateQuickSwitcherBar();
+        lucide.createIcons();
+      },
+
+      // basculer la vue affichée
+      showView(viewName) {
+        document.getElementById('view-setup').classList.add('hidden');
+        document.getElementById('view-auth').classList.add('hidden');
+        document.getElementById('view-chat').classList.add('hidden');
+
+        if (viewName === 'setup') document.getElementById('view-setup').classList.remove('hidden');
+        if (viewName === 'auth') document.getElementById('view-auth').classList.remove('hidden');
+        if (viewName === 'chat') document.getElementById('view-chat').classList.remove('hidden');
+        
+        lucide.createIcons();
+      },
+
+      // Création automatique de 2 contacts virtuels pour tester directement les chats
+      seedDefaultUsersIfNeeded() {
+        let users = DB.getUsers();
+        if (users.length === 1 && users[0].role === 'admin') {
+          const user1 = {
+            id: 'usr_agent_alpha',
+            fullName: 'Agent Alex Vance',
+            username: 'alex_vance',
+            email: 'alex.vance@cyber.comm',
+            phone: '+33611223344',
+            role: 'user',
+            password: 'User1234!',
+            status: 'active',
+            avatar: 'AV',
+            isOnline: true,
+            createdAt: new Date().toISOString()
+          };
+          const user2 = {
+            id: 'usr_agent_beta',
+            fullName: 'Elena Rostova (Support)',
+            username: 'elena_r',
+            email: 'elena.r@cyber.comm',
+            phone: '+261340000000',
+            role: 'user',
+            password: 'User1234!',
+            status: 'active',
+            avatar: 'ER',
+            isOnline: false,
+            createdAt: new Date().toISOString()
+          };
+          users.push(user1, user2);
+          DB.saveUsers(users);
+
+          // Seed un message de bienvenue
+          const welcomeMsg = {
+            id: 'msg_welcome_1',
+            senderId: user1.id,
+            receiverId: users[0].id,
+            content: "Bonjour Admin! Le réseau sécurisé CYBER.COMM est opérationnel. Transmettez vos ordres.",
+            type: 'text',
+            timestamp: new Date(Date.now() - 3600000).toISOString(),
+            status: 'read'
+          };
+          DB.saveMessages([welcomeMsg]);
+        }
+      },
+
+      // Synchronisation en direct entre différents onglets de navigateur
+      notifyOtherTabs(eventType, payload = {}) {
+        if (this.broadcastChannel) {
+          this.broadcastChannel.postMessage({ type: eventType, payload, senderTabUserId: this.currentUser?.id });
+        }
+      },
+
+      handleTabSyncEvent(data) {
+        if (data.type === 'NEW_MESSAGE') {
+          if (this.currentUser) {
+            // Recharger les messages si la discussion ouverte correspond
+            if (this.activeChatUser && (data.payload.senderId === this.activeChatUser.id || data.payload.receiverId === this.activeChatUser.id)) {
+              this.renderMessages();
+            }
+            this.renderUserList();
+          }
+        } else if (data.type === 'USER_MODIFIED' || data.type === 'SYSTEM_RESET') {
+          location.reload();
+        }
+      },
+
+      // ----------------------------------------------------
+      // HANDLERS AUTHENTIFICATION & SETUP
+      // ----------------------------------------------------
+      handleSetup(e) {
+        e.preventDefault();
+        const fullName = document.getElementById('setup-fullname').value.trim();
+        const username = document.getElementById('setup-username').value.trim().toLowerCase();
+        const email = document.getElementById('setup-email').value.trim().toLowerCase();
+        const password = document.getElementById('setup-password').value;
+        const pin = document.getElementById('setup-pin').value;
+
+        const adminUser = {
+          id: 'usr_admin_root',
+          fullName,
+          username,
+          email,
+          phone: '+00000000000',
+          role: 'admin',
+          password,
+          pin,
+          status: 'active',
+          avatar: username.substring(0, 2).toUpperCase(),
+          isOnline: true,
+          createdAt: new Date().toISOString()
+        };
+
+        DB.saveUsers([adminUser]);
+        DB.saveConfig({ isInitialized: true, adminId: adminUser.id });
+        DB.logActivity('SYSTEM_INIT', username, 'Initialisation du Super-Admin réussi.');
+
+        this.currentUser = adminUser;
+        DB.setSessionUser(adminUser.id);
+        
+        this.showToast('Système Initialisé avec Succès !', 'success');
+        this.seedDefaultUsersIfNeeded();
+        this.showView('chat');
+        this.setupChatUI();
+        this.updateQuickSwitcherBar();
+      },
+
+      switchAuthTab(tab) {
+        if (tab === 'login') {
+          document.getElementById('login-form').classList.remove('hidden');
+          document.getElementById('register-form').classList.add('hidden');
+          document.getElementById('auth-tab-login').className = "flex-1 pb-3 text-sm font-mono-code font-semibold text-cyber-neon border-b-2 border-cyber-neon transition-all";
+          document.getElementById('auth-tab-register').className = "flex-1 pb-3 text-sm font-mono-code font-semibold text-cyber-muted hover:text-cyber-text border-b-2 border-transparent transition-all";
+        } else {
+          document.getElementById('login-form').classList.add('hidden');
+          document.getElementById('register-form').classList.remove('hidden');
+          document.getElementById('auth-tab-register').className = "flex-1 pb-3 text-sm font-mono-code font-semibold text-cyber-neon border-b-2 border-cyber-neon transition-all";
+          document.getElementById('auth-tab-login').className = "flex-1 pb-3 text-sm font-mono-code font-semibold text-cyber-muted hover:text-cyber-text border-b-2 border-transparent transition-all";
+        }
+      },
+
+      checkPasswordStrength(val) {
+        const bar = document.getElementById('pass-strength-bar');
+        const txt = document.getElementById('pass-strength-text');
+        
+        let score = 0;
+        if (val.length >= 6) score++;
+        if (val.length >= 10) score++;
+        if (/[A-Z]/.test(val)) score++;
+        if (/[0-9]/.test(val)) score++;
+        if (/[^A-Za-z0-9]/.test(val)) score++;
+
+        if (score <= 2) {
+          bar.style.width = '33%';
+          bar.className = 'h-full bg-cyber-danger transition-all duration-300';
+          txt.innerText = 'Faible';
+          txt.className = 'text-[10px] font-mono-code text-cyber-danger';
+        } else if (score <= 4) {
+          bar.style.width = '66%';
+          bar.className = 'h-full bg-cyber-warning transition-all duration-300';
+          txt.innerText = 'Moyen';
+          txt.className = 'text-[10px] font-mono-code text-cyber-warning';
+        } else {
+          bar.style.width = '100%';
+          bar.className = 'h-full bg-cyber-neon transition-all duration-300';
+          txt.innerText = 'Sécurisé Néon';
+          txt.className = 'text-[10px] font-mono-code text-cyber-neon';
+        }
+      },
+
+      handleLogin(e) {
+        e.preventDefault();
+        const identity = document.getElementById('login-identity').value.trim().toLowerCase();
+        const password = document.getElementById('login-password').value;
+
+        const users = DB.getUsers();
+        const user = users.find(u => u.username.toLowerCase() === identity || u.email.toLowerCase() === identity);
+
+        if (!user || user.password !== password) {
+          this.showToast('Identifiants ou mot de passe incorrects.', 'danger');
+          return;
+        }
+
+        if (user.status === 'suspended' || user.status === 'banned') {
+          this.showToast(`Accès Refusé. Votre compte est ${user.status === 'suspended' ? 'Suspendu' : 'Banni'} par l'admin.`, 'danger');
+          return;
+        }
+
+        user.isOnline = true;
+        DB.saveUsers(users);
+
+        this.currentUser = user;
+        DB.setSessionUser(user.id);
+        DB.logActivity('USER_LOGIN', user.username, 'Connexion réussie.');
+
+        this.showToast(`Bienvenue, ${user.fullName}`, 'success');
+        this.showView('chat');
+        this.setupChatUI();
+        this.updateQuickSwitcherBar();
+      },
+
+      handleRegister(e) {
+        e.preventDefault();
+        const fullName = document.getElementById('reg-fullname').value.trim();
+        const username = document.getElementById('reg-username').value.trim().toLowerCase();
+        const email = document.getElementById('reg-email').value.trim().toLowerCase();
+        const phoneCode = document.getElementById('reg-phone-code').value;
+        const phoneNumber = document.getElementById('reg-phone-number').value.trim();
+        const password = document.getElementById('reg-password').value;
+
+        const users = DB.getUsers();
+        if (users.some(u => u.username === username)) {
+          this.showToast("Ce nom d'utilisateur est déjà utilisé.", 'danger');
+          return;
+        }
+        if (users.some(u => u.email === email)) {
+          this.showToast("Cette adresse email est déjà enregistrée.", 'danger');
+          return;
+        }
+
+        const newUser = {
+          id: 'usr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          fullName,
+          username,
+          email,
+          phone: `${phoneCode}${phoneNumber}`,
+          role: 'user', // Utilisateur standard
+          password,
+          status: 'active',
+          avatar: username.substring(0, 2).toUpperCase(),
+          isOnline: true,
+          createdAt: new Date().toISOString()
+        };
+
+        users.push(newUser);
+        DB.saveUsers(users);
+        DB.logActivity('USER_REGISTER', newUser.username, 'Nouveau compte créé.');
+
+        this.currentUser = newUser;
+        DB.setSessionUser(newUser.id);
+
+        this.showToast('Compte créé avec succès !', 'success');
+        this.showView('chat');
+        this.setupChatUI();
+        this.updateQuickSwitcherBar();
+      },
+
+      logout() {
+        if (this.currentUser) {
+          const users = DB.getUsers();
+          const u = users.find(x => x.id === this.currentUser.id);
+          if (u) {
+            u.isOnline = false;
+            DB.saveUsers(users);
+          }
+          DB.logActivity('USER_LOGOUT', this.currentUser.username, 'Déconnexion.');
+        }
+
+        this.currentUser = null;
+        this.activeChatUser = null;
+        DB.setSessionUser(null);
+        this.showView('auth');
+        this.updateQuickSwitcherBar();
+      },
+
+      // Bascule rapide entre comptes pour tester la messagerie dans la même fenêtre
+      switchUserQuickly(userId) {
+        const users = DB.getUsers();
+        const target = users.find(u => u.id === userId);
+        if (target) {
+          this.currentUser = target;
+          DB.setSessionUser(target.id);
+          this.activeChatUser = null;
+          this.showToast(`Bascule vers le profil : ${target.fullName}`, 'info');
+          this.showView('chat');
+          this.setupChatUI();
+          this.updateQuickSwitcherBar();
+        }
+      },
+
+      updateQuickSwitcherBar() {
+        const container = document.getElementById('quick-users-list');
+        const users = DB.getUsers();
+        
+        container.innerHTML = users.map(u => {
+          const isCurrent = this.currentUser?.id === u.id;
+          const isUserAdmin = u.role === 'admin';
+          return `
+            <button onclick="App.switchUserQuickly('${u.id}')" 
+              class="px-2 py-0.5 rounded text-[11px] font-mono-code transition-all flex items-center gap-1 ${
+                isCurrent 
+                  ? 'bg-cyber-neon text-cyber-bg font-bold shadow-neon' 
+                  : 'bg-cyber-card border border-cyber-border text-cyber-muted hover:text-cyber-neon'
+              }">
+              ${isUserAdmin ? '🛡️' : '👤'} ${u.username}
+            </button>
+          `;
+        }).join('');
+      },
+
+      // ----------------------------------------------------
+      // MESSAGERIE & INTERFACE DE CHAT
+      // ----------------------------------------------------
+      setupChatUI() {
+        if (!this.currentUser) return;
+
+        // Informations profil utilisateur connecté dans la sidebar
+        document.getElementById('user-avatar-badge').innerText = this.currentUser.avatar || 'U';
+        document.getElementById('user-display-name').innerText = this.currentUser.fullName;
+        document.getElementById('user-role-badge').innerText = this.currentUser.role === 'admin' ? '⚡ SUPER ADMIN' : 'COMPTE MEMBRE';
+
+        // Afficher ou masquer le bouton d'administration
+        const btnAdmin = document.getElementById('btn-admin-panel');
+        if (this.currentUser.role === 'admin') {
+          btnAdmin.classList.remove('hidden');
+        } else {
+          btnAdmin.classList.add('hidden');
+        }
+
+        this.renderUserList();
+
+        // Réinitialiser la zone de discussion active
+        if (!this.activeChatUser) {
+          document.getElementById('chat-empty-state').classList.remove('hidden');
+          document.getElementById('chat-active-interface').classList.add('hidden');
+        }
+      },
+
+      renderUserList() {
+        const query = (document.getElementById('chat-search').value || '').toLowerCase();
+        const allUsers = DB.getUsers().filter(u => u.id !== this.currentUser.id);
+        const messages = DB.getMessages();
+
+        const filtered = allUsers.filter(u => 
+          u.fullName.toLowerCase().includes(query) || u.username.toLowerCase().includes(query)
+        );
+
+        const container = document.getElementById('user-list-container');
+        if (filtered.length === 0) {
+          container.innerHTML = `<div class="p-4 text-center text-xs font-mono-code text-cyber-muted">Aucun contact trouvé</div>`;
+          return;
+        }
+
+        container.innerHTML = filtered.map(u => {
+          // Trouver le dernier message échangé avec cet utilisateur
+          const threadMsgs = messages.filter(m => 
+            (m.senderId === this.currentUser.id && m.receiverId === u.id) ||
+            (m.senderId === u.id && m.receiverId === this.currentUser.id)
+          ).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+          const lastMsg = threadMsgs[0];
+          const unreadCount = threadMsgs.filter(m => m.senderId === u.id && m.status !== 'read').length;
+          const isActive = this.activeChatUser?.id === u.id;
+
+          let timeStr = '';
+          if (lastMsg) {
+            const d = new Date(lastMsg.timestamp);
+            timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          }
+
+          return `
+            <div onclick="App.selectChatUser('${u.id}')" 
+              class="p-3 cursor-pointer transition-colors flex items-center justify-between ${
+                isActive ? 'bg-cyber-cardhover border-l-4 border-cyber-neon' : 'hover:bg-cyber-card'
+              }">
+              <div class="flex items-center gap-3 overflow-hidden">
+                <div class="relative flex-shrink-0">
+                  <div class="w-10 h-10 rounded-full bg-cyber-bg border border-cyber-border flex items-center justify-center text-cyber-neon font-bold font-mono-code text-xs">
+                    ${u.avatar || 'U'}
+                  </div>
+                  <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ${u.isOnline ? 'bg-cyber-neon' : 'bg-gray-600'} border-2 border-cyber-surface"></span>
+                </div>
+                <div class="truncate">
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-semibold text-xs text-cyber-text truncate">${this.escapeHTML(u.fullName)}</span>
+                    ${u.role === 'admin' ? '<span class="text-[9px] bg-cyber-neon/20 text-cyber-neon px-1 rounded font-mono-code">ADMIN</span>' : ''}
+                  </div>
+                  <div class="text-[11px] text-cyber-muted truncate mt-0.5">
+                    ${lastMsg ? this.escapeHTML(lastMsg.content) : '<i class="text-[10px]">Démarrer la discussion</i>'}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="flex flex-col items-end gap-1 flex-shrink-0 ml-2">
+                <span class="text-[10px] font-mono-code text-cyber-muted">${timeStr}</span>
+                ${unreadCount > 0 ? `
+                  <span class="w-4 h-4 rounded-full bg-cyber-neon text-cyber-bg font-bold font-mono-code text-[10px] flex items-center justify-center shadow-neon">
+                    ${unreadCount}
+                  </span>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      },
+
+      selectChatUser(userId) {
+        const users = DB.getUsers();
+        const target = users.find(u => u.id === userId);
+        if (!target) return;
+
+        this.activeChatUser = target;
+
+        // Marquer les messages reçus de cet utilisateur comme 'lu'
+        const messages = DB.getMessages();
+        let updated = false;
+        messages.forEach(m => {
+          if (m.senderId === target.id && m.receiverId === this.currentUser.id && m.status !== 'read') {
+            m.status = 'read';
+            updated = true;
+          }
+        });
+        if (updated) DB.saveMessages(messages);
+
+        // Mettre à jour Header Chat
+        document.getElementById('chat-empty-state').classList.add('hidden');
+        document.getElementById('chat-active-interface').classList.remove('hidden');
+
+        document.getElementById('active-chat-avatar').innerText = target.avatar || 'U';
+        document.getElementById('active-chat-name').innerText = target.fullName;
+        document.getElementById('active-chat-status-dot').className = `absolute bottom-0 right-0 w-3 h-3 rounded-full ${target.isOnline ? 'bg-cyber-neon' : 'bg-gray-600'} border-2 border-cyber-surface`;
+        document.getElementById('active-chat-status').innerText = target.isOnline ? 'En ligne' : 'Hors ligne';
+
+        this.renderMessages();
+        this.renderUserList();
+
+        // En mode mobile, masquer la sidebar au clic sur un contact
+        if (window.innerWidth < 768) {
+          document.getElementById('sidebar-panel').classList.add('hidden');
+        }
+      },
+
+      closeMobileChat() {
+        document.getElementById('sidebar-panel').classList.remove('hidden');
+        this.activeChatUser = null;
+        document.getElementById('chat-empty-state').classList.remove('hidden');
+        document.getElementById('chat-active-interface').classList.add('hidden');
+      },
+
+      renderMessages() {
+        if (!this.activeChatUser || !this.currentUser) return;
+
+        const allMessages = DB.getMessages();
+        const thread = allMessages.filter(m => 
+          (m.senderId === this.currentUser.id && m.receiverId === this.activeChatUser.id) ||
+          (m.senderId === this.activeChatUser.id && m.receiverId === this.currentUser.id)
+        ).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        const container = document.getElementById('messages-container');
+        
+        if (thread.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-12">
+              <span class="inline-block px-3 py-1 bg-cyber-card border border-cyber-border rounded-full text-xs font-mono-code text-cyber-muted">
+                🔒 Transmission chiffrée établie. Envoyez un premier message.
+              </span>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = thread.map(msg => {
+          const isMe = msg.senderId === this.currentUser.id;
+          const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          // Statut double coche (Envoyé, Distribué, Lu)
+          let statusIcon = '✓';
+          if (msg.status === 'delivered') statusIcon = '✓✓';
+          if (msg.status === 'read') statusIcon = '<span class="text-cyber-neon">✓✓</span>';
+
+          return `
+            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+              <div class="max-w-[80%] sm:max-w-md rounded-xl p-3 text-xs leading-relaxed ${
+                isMe 
+                  ? 'bg-cyber-card border border-cyber-neon/40 text-cyber-text rounded-br-none shadow-neon' 
+                  : 'bg-cyber-surface border border-cyber-border text-cyber-text rounded-bl-none'
+              }">
+                <!-- Pièce Jointe Image -->
+                ${msg.attachmentUrl ? `
+                  <div class="mb-2 rounded-lg overflow-hidden border border-cyber-border">
+                    <img src="${msg.attachmentUrl}" class="max-h-48 w-full object-cover" alt="attachment">
+                  </div>
+                ` : ''}
+
+                <!-- Note Vocale Simulation -->
+                ${msg.type === 'voice' ? `
+                  <div class="flex items-center gap-3 py-1 px-2 bg-cyber-bg/50 rounded-lg border border-cyber-border mb-1">
+                    <button onclick="App.playAudioBeep()" class="w-8 h-8 rounded-full bg-cyber-neon text-cyber-bg flex items-center justify-center font-bold">
+                      <i data-lucide="play" class="w-4 h-4"></i>
+                    </button>
+                    <div class="flex-1 flex items-center gap-1 h-6">
+                      <span class="w-1 h-3 bg-cyber-neon rounded-full wave-bar"></span>
+                      <span class="w-1 h-5 bg-cyber-neon rounded-full wave-bar"></span>
+                      <span class="w-1 h-2 bg-cyber-neon rounded-full wave-bar"></span>
+                      <span class="w-1 h-4 bg-cyber-neon rounded-full wave-bar"></span>
+                      <span class="w-1 h-6 bg-cyber-neon rounded-full wave-bar"></span>
+                    </div>
+                    <span class="text-[10px] font-mono-code text-cyber-muted">0:04</span>
+                  </div>
+                ` : ''}
+
+                <!-- Contenu Texte -->
+                <div>${this.escapeHTML(msg.content)}</div>
+
+                <!-- Footer du Message (Heure & Coche) -->
+                <div class="mt-1 flex items-center justify-end gap-1 text-[10px] font-mono-code text-cyber-muted">
+                  <span>${time}</span>
+                  ${isMe ? `<span class="ml-1">${statusIcon}</span>` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Auto-scroll vers le bas
+        container.scrollTop = container.scrollHeight;
+        lucide.createIcons();
+      },
+
+      sendMessage() {
+        const input = document.getElementById('message-input');
+        const text = input.value.trim();
+
+        if (!text && !this.currentAttachment) return;
+        if (!this.activeChatUser || !this.currentUser) return;
+
+        const messages = DB.getMessages();
+        const newMsg = {
+          id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          senderId: this.currentUser.id,
+          receiverId: this.activeChatUser.id,
+          content: text || (this.currentAttachment ? '[Pièce jointe envoyée]' : ''),
+          type: this.currentAttachment?.type || 'text',
+          attachmentUrl: this.currentAttachment?.url || null,
+          timestamp: new Date().toISOString(),
+          status: this.activeChatUser.isOnline ? 'delivered' : 'sent'
+        };
+
+        messages.push(newMsg);
+        DB.saveMessages(messages);
+
+        input.value = '';
+        this.clearAttachmentPreview();
+        this.renderMessages();
+        this.renderUserList();
+
+        // Notifier les autres onglets ou fenêtres de navigateur ouverts
+        this.notifyOtherTabs('NEW_MESSAGE', { senderId: this.currentUser.id, receiverId: this.activeChatUser.id });
+      },
+
+      // ----------------------------------------------------
+      // EMOJI & ATTACHMENTS & VOICE
+      // ----------------------------------------------------
+      toggleEmojiPicker() {
+        const picker = document.getElementById('emoji-picker-menu');
+        picker.classList.toggle('hidden');
+      },
+
+      insertEmoji(emoji) {
+        const input = document.getElementById('message-input');
+        input.value += emoji;
+        document.getElementById('emoji-picker-menu').classList.add('hidden');
+        input.focus();
+      },
+
+      triggerFileSelect() {
+        document.getElementById('hidden-file-input').click();
+      },
+
+      handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          this.currentAttachment = {
+            type: 'image',
+            url: event.target.result,
+            name: file.name
+          };
+
+          const previewBar = document.getElementById('attachment-preview-bar');
+          const previewContent = document.getElementById('attachment-preview-content');
+          previewBar.classList.remove('hidden');
+          previewContent.innerHTML = `<i data-lucide="image" class="w-4 h-4"></i> Image sélectionnée : ${file.name}`;
+          lucide.createIcons();
+        };
+        reader.readAsDataURL(file);
+      },
+
+      clearAttachmentPreview() {
+        this.currentAttachment = null;
+        document.getElementById('attachment-preview-bar').classList.add('hidden');
+      },
+
+      toggleVoiceRecording() {
+        const btn = document.getElementById('btn-voice-rec');
+        if (!this.isRecordingVoice) {
+          this.isRecordingVoice = true;
+          btn.classList.add('text-cyber-danger', 'animate-pulse');
+          this.showToast("Enregistrement de la note vocale...", 'info');
+
+          // Auto-stop et envoi après 3 secondes de simulation
+          setTimeout(() => {
+            if (this.isRecordingVoice) {
+              this.isRecordingVoice = false;
+              btn.classList.remove('text-cyber-danger', 'animate-pulse');
+              
+              // Envoyer le vocal simulé
+              this.currentAttachment = { type: 'voice' };
+              this.sendMessage();
+              this.showToast("Note vocale transmise.", 'success');
+            }
+          }, 3000);
+        }
+      },
+
+      playAudioBeep() {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(587.33, ctx.currentTime); // Ré5
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.2);
+        } catch(e) {}
+      },
+
+      simulateVoiceCall() {
+        this.showToast(`Appel vidéo/chiffré vers ${this.activeChatUser?.fullName} (Simulation)`, 'info');
+      },
+
+      showContactDetails() {
+        if (!this.activeChatUser) return;
+        this.showToast(`Fiche Contact : ${this.activeChatUser.fullName} (${this.activeChatUser.email})`, 'info');
+      },
+
+      // ----------------------------------------------------
+      // PANNEAU SUPER-ADMINISTRATEUR
+      // ----------------------------------------------------
+      openAdminModal() {
+        if (this.currentUser?.role !== 'admin') {
+          this.showToast("Accès Refusé. Droits Super-Admin requis.", 'danger');
+          return;
+        }
+        document.getElementById('modal-admin').classList.remove('hidden');
+        this.switchAdminTab('users');
+      },
+
+      closeAdminModal() {
+        document.getElementById('modal-admin').classList.add('hidden');
+      },
+
+      switchAdminTab(tab) {
+        const sections = ['users', 'audit', 'logs', 'backup'];
+        sections.forEach(s => {
+          document.getElementById(`adm-sec-${s}`).classList.add('hidden');
+          const tabBtn = document.getElementById(`adm-tab-${s}`);
+          tabBtn.className = "px-5 py-3 border-b-2 border-transparent text-cyber-muted hover:text-cyber-text flex items-center gap-2 font-mono-code";
+        });
+
+        document.getElementById(`adm-sec-${tab}`).classList.remove('hidden');
+        const activeBtn = document.getElementById(`adm-tab-${tab}`);
+        activeBtn.className = "px-5 py-3 border-b-2 border-cyber-neon text-cyber-neon font-bold flex items-center gap-2 font-mono-code";
+
+        if (tab === 'users') this.renderAdminUsersTable();
+        if (tab === 'audit') this.renderAdminAuditThreads();
+        if (tab === 'logs') this.renderAdminLogs();
+        lucide.createIcons();
+      },
+
+      renderAdminUsersTable() {
+        const users = DB.getUsers();
+        const tbody = document.getElementById('adm-users-table-body');
+
+        tbody.innerHTML = users.map(u => {
+          const isSelf = u.id === this.currentUser.id;
+          return `
+            <tr class="hover:bg-cyber-surface/60 transition-colors">
+              <td class="p-3">
+                <div class="font-bold text-cyber-text">${this.escapeHTML(u.fullName)}</div>
+                <div class="text-[10px] text-cyber-muted">@${u.username}</div>
+              </td>
+              <td class="p-3 text-cyber-muted">
+                <div>${u.email}</div>
+                <div class="text-[10px] font-mono-code">${u.phone || 'N/A'}</div>
+              </td>
+              <td class="p-3">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.role === 'admin' ? 'bg-cyber-neon/20 text-cyber-neon border border-cyber-neon/40' : 'bg-cyber-card border border-cyber-border text-cyber-muted'}">
+                  ${u.role.toUpperCase()}
+                </span>
+              </td>
+              <td class="p-3">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                  u.status === 'active' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' :
+                  u.status === 'suspended' ? 'bg-amber-950 text-amber-400 border border-amber-800' :
+                  'bg-red-950 text-red-400 border border-red-800'
+                }">
+                  ${u.status.toUpperCase()}
+                </span>
+              </td>
+              <td class="p-3 text-right">
+                ${isSelf ? '<span class="text-cyber-muted italic text-[11px]">Compte Actuel</span>' : `
+                  <div class="flex items-center justify-end gap-2">
+                    <button onclick="App.toggleUserStatus('${u.id}')" class="px-2 py-1 rounded bg-cyber-card border border-cyber-border hover:border-cyber-warning text-cyber-warning text-[10px]">
+                      ${u.status === 'active' ? 'Suspendre' : 'Réactiver'}
+                    </button>
+                    <button onclick="App.promptResetUserPass('${u.id}')" class="px-2 py-1 rounded bg-cyber-card border border-cyber-border hover:border-cyber-neon text-cyber-neon text-[10px]">
+                      Pass
+                    </button>
+                  </div>
+                `}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      },
+
+      toggleUserStatus(userId) {
+        const users = DB.getUsers();
+        const target = users.find(u => u.id === userId);
+        if (!target) return;
+
+        target.status = target.status === 'active' ? 'suspended' : 'active';
+        DB.saveUsers(users);
+        DB.logActivity('ADMIN_STATUS_CHANGE', this.currentUser.username, `Statut de ${target.username} modifié en ${target.status}`);
+
+        this.renderAdminUsersTable();
+        this.updateQuickSwitcherBar();
+        this.notifyOtherTabs('USER_MODIFIED');
+        this.showToast(`Statut du compte mis à jour : ${target.status}`, 'info');
+      },
+
+      promptResetUserPass(userId) {
+        const newPass = prompt("Entrez le nouveau mot de passe pour cet utilisateur :");
+        if (!newPass) return;
+
+        const users = DB.getUsers();
+        const target = users.find(u => u.id === userId);
+        if (target) {
+          target.password = newPass;
+          DB.saveUsers(users);
+          DB.logActivity('ADMIN_PASSWORD_RESET', this.currentUser.username, `Mot de passe réinitialisé pour ${target.username}`);
+          this.showToast(`Mot de passe mis à jour pour @${target.username}`, 'success');
+        }
+      },
+
+      openCreateUserPrompt() {
+        const uname = prompt("Nom d'utilisateur :");
+        if (!uname) return;
+        const fname = prompt("Nom et prénom :");
+        const pass = prompt("Mot de passe :");
+        
+        const users = DB.getUsers();
+        const newUser = {
+          id: 'usr_' + Date.now(),
+          fullName: fname || uname,
+          username: uname.toLowerCase(),
+          email: `${uname}@cyber.comm`,
+          phone: '+33600000000',
+          role: 'user',
+          password: pass || '123456',
+          status: 'active',
+          avatar: uname.substring(0, 2).toUpperCase(),
+          isOnline: false,
+          createdAt: new Date().toISOString()
+        };
+
+        users.push(newUser);
+        DB.saveUsers(users);
+        this.renderAdminUsersTable();
+        this.updateQuickSwitcherBar();
+        this.showToast(`Compte @${uname} créé !`, 'success');
+      },
+
+      // AUDIT & SURVEILLANCE GLOBALE
+      renderAdminAuditThreads() {
+        const users = DB.getUsers();
+        const messages = DB.getMessages();
+        const container = document.getElementById('adm-audit-threads-list');
+
+        // Paire unique d'utilisateurs
+        const pairs = [];
+        messages.forEach(m => {
+          const key = [m.senderId, m.receiverId].sort().join('___');
+          if (!pairs.includes(key)) pairs.push(key);
+        });
+
+        if (pairs.length === 0) {
+          container.innerHTML = `<div class="text-xs text-cyber-muted py-4 text-center">Aucune discussion enregistrée</div>`;
+          return;
+        }
+
+        container.innerHTML = pairs.map(p => {
+          const [u1Id, u2Id] = p.split('___');
+          const u1 = users.find(x => x.id === u1Id);
+          const u2 = users.find(x => x.id === u2Id);
+          if (!u1 || !u2) return '';
+
+          return `
+            <button onclick="App.inspectAuditThread('${u1.id}', '${u2.id}')" 
+              class="w-full text-left p-2 rounded bg-cyber-card border border-cyber-border hover:border-cyber-neon text-xs font-mono-code transition-colors flex items-center justify-between">
+              <span class="truncate text-cyber-text">${u1.username} ↔ ${u2.username}</span>
+              <i data-lucide="eye" class="w-3.5 h-3.5 text-cyber-neon"></i>
+            </button>
+          `;
+        }).join('');
+        lucide.createIcons();
+      },
+
+      inspectAuditThread(u1Id, u2Id) {
+        const users = DB.getUsers();
+        const messages = DB.getMessages();
+        const u1 = users.find(x => x.id === u1Id);
+        const u2 = users.find(x => x.id === u2Id);
+
+        document.getElementById('adm-audit-thread-title').innerText = `${u1?.fullName} et ${u2?.fullName}`;
+
+        const thread = messages.filter(m => 
+          (m.senderId === u1Id && m.receiverId === u2Id) ||
+          (m.senderId === u2Id && m.receiverId === u1Id)
+        ).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        const box = document.getElementById('adm-audit-messages-box');
+        box.innerHTML = thread.map(m => {
+          const sender = users.find(x => x.id === m.senderId);
+          return `
+            <div class="p-2 rounded bg-cyber-surface border border-cyber-border text-xs font-mono-code">
+              <div class="flex items-center justify-between text-[10px] text-cyber-muted mb-1">
+                <span class="text-cyber-neon font-bold">${sender?.username || 'Inconnu'}</span>
+                <span>${new Date(m.timestamp).toLocaleString()}</span>
+              </div>
+              <div class="text-cyber-text">${this.escapeHTML(m.content)}</div>
+            </div>
+          `;
+        }).join('');
+      },
+
+      renderAdminLogs() {
+        const logs = DB.getLogs();
+        const container = document.getElementById('adm-logs-container');
+
+        container.innerHTML = logs.map(l => `
+          <div class="p-2 border-b border-cyber-border/30 flex items-center justify-between">
+            <div>
+              <span class="text-cyber-neon font-bold">[${l.action}]</span> 
+              <span class="text-cyber-muted">par ${l.actor} :</span> 
+              <span class="text-cyber-text">${this.escapeHTML(l.details)}</span>
+            </div>
+            <span class="text-[10px] text-cyber-muted">${new Date(l.timestamp).toLocaleTimeString()}</span>
+          </div>
+        `).join('');
+      },
+
+      // EXPORTATION ET IMPORTATION JSON
+      exportDatabaseJSON() {
+        const data = {
+          config: DB.getConfig(),
+          users: DB.getUsers(),
+          messages: DB.getMessages(),
+          logs: DB.getLogs(),
+          exportedAt: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `CYBER_COMM_BACKUP_${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        this.showToast("Base de données exportée en JSON !", 'success');
+      },
+
+      importDatabaseJSON(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = JSON.parse(event.target.result);
+            if (data.users && data.messages) {
+              DB.saveUsers(data.users);
+              DB.saveMessages(data.messages);
+              if (data.logs) localStorage.setItem(DB.KEYS.LOGS, JSON.stringify(data.logs));
+              if (data.config) DB.saveConfig(data.config);
+
+              this.showToast("Restauration réussie ! Redémarrage...", 'success');
+              setTimeout(() => location.reload(), 1500);
+            } else {
+              this.showToast("Format JSON invalide.", 'danger');
+            }
+          } catch(err) {
+            this.showToast("Erreur lors de la lecture du fichier JSON.", 'danger');
+          }
+        };
+        reader.readAsText(file);
+      },
+
+      resetSystemDatabase() {
+        if (confirm("Êtes-vous sûr de vouloir réinitialiser entièrement la base de données ? Toutes les discussions seront effacées.")) {
+          localStorage.clear();
+          this.notifyOtherTabs('SYSTEM_RESET');
+          location.reload();
+        }
+      },
+
+      // ----------------------------------------------------
+      // UTILITAIRES & NOTIFICATIONS TOAST
+      // ----------------------------------------------------
+      showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        
+        let borderClr = 'border-cyber-neon text-cyber-neon';
+        if (type === 'danger') borderClr = 'border-cyber-danger text-cyber-danger';
+        if (type === 'warning') borderClr = 'border-cyber-warning text-cyber-warning';
+
+        toast.className = `p-3 bg-cyber-card border ${borderClr} rounded-lg shadow-neon text-xs font-mono-code transition-all duration-300 transform translate-y-2 opacity-0`;
+        toast.innerText = message;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.classList.remove('translate-y-2', 'opacity-0');
+        }, 10);
+
+        setTimeout(() => {
+          toast.classList.add('opacity-0');
+          setTimeout(() => toast.remove(), 300);
+        }, 3500);
+      },
+
+      escapeHTML(str) {
+        if (!str) return '';
+        return str.replace(/[&<>"']/g, function(m) {
+          return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+          }[m];
+        });
+      }
+    };
+
+    // Démarrer l'application dès le chargement du document
+    window.onload = () => {
+      App.init();
+    };
+  </script>
+</body>
+</html>
